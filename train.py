@@ -48,15 +48,18 @@ def train_model(data_directory, model_arch='vgg19', save_directory='../saved_mod
 
     train_loader, valid_loader, class_to_idx = data_transformation(data_directory)
 
-    if model_arch == "vgg19":
-        model = torchvision.models.vgg19(pretrained=True)
-    else:
+    if model_arch.startswith("vgg"):
         model = getattr(torchvision.models, model_arch)(pretrained=True)
+        in_features = model.classifier[0].in_features
+    elif model_arch.startswith("densenet"):
+        model = getattr(torchvision.models, model_arch)(pretrained=True)
+        in_features = model.classifier.in_features
+    else:
+        raise ValueError("Unsupported model architecture")
 
     for param in model.parameters():
         param.requires_grad = False
 
-    in_features = model.classifier[0].in_features
     classifier = nn.Sequential(
         nn.Linear(in_features, 2048),
         nn.ReLU(inplace=True),
@@ -115,7 +118,7 @@ def train_model(data_directory, model_arch='vgg19', save_directory='../saved_mod
                   'epochs': epochs,
                   'optim_stat_dict': optimizer.state_dict(),
                   'class_to_idx': model.class_to_idx,
-                  'vgg_type': model_arch
+                  'model_arch': model_arch
                   }
 
     checkpoint_path = os.path.join(save_directory, "checkpoint.pth")
@@ -127,7 +130,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('data_directory', help="Directory of the training images")
     parser.add_argument('--model_arch', dest='model_arch', help="Type of pre-trained model to be used",
-                        default="vgg19", choices=['vgg11', 'vgg13', 'vgg16', 'vgg19'])
+                        default="vgg19", choices=['vgg11', 'vgg13', 'vgg16', 'vgg19', 'densenet121', 'densenet161', 'densenet169', 'densenet201'])
     parser.add_argument('--save_directory', dest='save_directory', help="Directory where the model will be saved after training", default='../saved_models')
     parser.add_argument('--learning_rate', dest='learning_rate', help="Learning rate when training the model. Default is 0.003", default=0.003, type=float)
     parser.add_argument('--epochs', dest='epochs', help="Number of epochs when training the model. Default is 3", default=3, type=int)
