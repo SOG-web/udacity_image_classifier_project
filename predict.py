@@ -11,11 +11,13 @@ class FlowerClassifier:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.load_checkpoint(checkpoint_path)
         self.model.eval()
+        self.class_to_idx = self.model.class_to_idx
+        self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.category_to_name = self.load_category_names(category_names_path)
         
     def load_checkpoint(self, filepath):
         checkpoint = torch.load(filepath, map_location=self.device)
-        model = getattr(models, checkpoint['vgg_type'])(pretrained=True)
+        model = getattr(models, checkpoint['model_arch'])(pretrained=True)
         for param in model.parameters():
             param.requires_grad = False
         model.classifier = checkpoint['classifier']
@@ -45,7 +47,7 @@ class FlowerClassifier:
         probabilities, indices = output.topk(topk)
         probabilities = probabilities.cpu().numpy().tolist()[0]
         indices = indices.cpu().numpy().tolist()[0]
-        classes = [self.category_to_name[str(idx)] for idx in indices]
+        classes = [self.category_to_name[self.idx_to_class[idx]] for idx in indices]
         return probabilities, classes
 
 if __name__ == '__main__':
