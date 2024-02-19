@@ -1,5 +1,6 @@
 import torch
 import torchvision.models as models
+from torchvision import transforms
 import torch.nn.functional as F
 from PIL import Image
 import numpy as np
